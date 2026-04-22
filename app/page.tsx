@@ -12,6 +12,7 @@ import { sampleItems } from "@/lib/sampleData";
 
 export default function Home() {
   const [items, setItems] = useState<HtmlItem[]>([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [filter, setFilter] = useState<FilterState>({
     search: "",
     category: "",
@@ -36,6 +37,8 @@ export default function Home() {
 
   const handleFilterChange = (partial: Partial<FilterState>) => {
     setFilter((prev) => ({ ...prev, ...partial }));
+    // モバイルでフィルター選択時にサイドバーを閉じる
+    setSidebarOpen(false);
   };
 
   const filteredItems = useMemo(() => {
@@ -99,18 +102,44 @@ export default function Home() {
 
   return (
     <div className="flex min-h-screen bg-vault-bg">
-      <Sidebar items={items} filter={filter} onFilterChange={handleFilterChange} />
+      {/* モバイル用オーバーレイ */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-20 md:hidden backdrop-blur-sm"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
 
-      <main className="flex-1 ml-60 min-h-screen">
-        {/* Top bar */}
-        <header className="sticky top-0 z-10 bg-vault-bg/95 backdrop-blur border-b border-vault-border px-6 py-4 flex items-center gap-4">
-          <div className="flex-1">
-            <h1 className="text-sm font-semibold text-vault-text">{filterLabel}</h1>
+      <Sidebar
+        items={items}
+        filter={filter}
+        onFilterChange={handleFilterChange}
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
+      {/* メインコンテンツ：PCはml-60、モバイルはml-0でフル幅 */}
+      <main className="flex-1 ml-0 md:ml-60 min-h-screen">
+        {/* トップバー */}
+        <header className="sticky top-0 z-10 bg-vault-bg/95 backdrop-blur border-b border-vault-border px-4 md:px-6 py-3 md:py-4 flex items-center gap-3">
+          {/* ハンバーガーボタン（モバイルのみ） */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="md:hidden flex flex-col justify-center items-center w-9 h-9 rounded-lg hover:bg-vault-card transition-colors gap-1.5 flex-shrink-0"
+            aria-label="メニューを開く"
+          >
+            <span className="w-5 h-0.5 bg-vault-text rounded-full" />
+            <span className="w-5 h-0.5 bg-vault-text rounded-full" />
+            <span className="w-5 h-0.5 bg-vault-text rounded-full" />
+          </button>
+
+          <div className="flex-1 min-w-0">
+            <h1 className="text-sm font-semibold text-vault-text truncate">{filterLabel}</h1>
             <p className="text-xs text-vault-muted">{filteredItems.length} 件</p>
           </div>
 
-          {/* Search */}
-          <div className="relative w-72">
+          {/* 検索（PCのみ幅広く・モバイルは縮む） */}
+          <div className="relative w-36 sm:w-52 md:w-72">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-vault-muted text-sm select-none">
               🔍
             </span>
@@ -118,7 +147,7 @@ export default function Home() {
               type="text"
               value={filter.search}
               onChange={(e) => handleFilterChange({ search: e.target.value })}
-              placeholder="タイトル・タグで検索..."
+              placeholder="検索..."
               className="w-full bg-vault-card border border-vault-border rounded-lg pl-9 pr-8 py-2 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition-colors"
             />
             {filter.search && (
@@ -131,18 +160,18 @@ export default function Home() {
             )}
           </div>
 
-          {/* Add button */}
+          {/* 追加ボタン */}
           <button
             onClick={() => setAddEditTarget("new")}
-            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-purple-900/30 transition-colors flex-shrink-0"
+            className="flex items-center gap-1.5 px-3 md:px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-purple-900/30 transition-colors flex-shrink-0"
           >
             <span className="text-lg leading-none">+</span>
-            新規追加
+            <span className="hidden sm:inline">新規追加</span>
           </button>
         </header>
 
-        {/* Content */}
-        <div className="p-6">
+        {/* コンテンツ */}
+        <div className="p-4 md:p-6">
           {!filter.category && !filter.tag && !filter.onlyFavorites && !filter.search && (
             <DashboardStats items={items} />
           )}
@@ -157,7 +186,7 @@ export default function Home() {
               </h3>
               <p className="text-vault-muted text-sm mb-6">
                 {items.length === 0
-                  ? "「新規追加」ボタンから最初のHTMLスニペットを追加しましょう"
+                  ? "「+」ボタンから最初のHTMLスニペットを追加しましょう"
                   : "検索条件を変えてみてください"}
               </p>
               {items.length === 0 && (
