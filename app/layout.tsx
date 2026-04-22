@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import ServiceWorkerRegistration from "@/components/ServiceWorkerRegistration";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export const metadata: Metadata = {
   title: "HTML Vault",
@@ -35,10 +36,16 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="HTML Vault" />
         <meta name="format-detection" content="telephone=no" />
+        {/* テーマのちらつき防止: DOMより先にdata-theme属性をセット */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){var t=localStorage.getItem('html-vault-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})()`,
+          }}
+        />
       </head>
       <body className="antialiased bg-vault-bg text-vault-text min-h-screen">
         <ServiceWorkerRegistration />
-        {children}
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );

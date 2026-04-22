@@ -4,6 +4,7 @@ import { useState } from "react";
 import { HtmlItem, FilterState } from "@/lib/types";
 import { getCategories, getAllTags } from "@/lib/storage";
 import ShareModal from "./ShareModal";
+import ThemeToggle from "./ThemeToggle";
 
 interface SidebarProps {
   items: HtmlItem[];
@@ -73,7 +74,7 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
         <div className="px-5 py-5 border-b border-vault-border flex items-center justify-between pt-safe [padding-top:max(1.25rem,env(safe-area-inset-top,0px))]">
           <div>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-900/40">
+              <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-accent/20">
                 H
               </div>
               <span className="font-bold text-lg text-vault-text">HTML Vault</span>
@@ -95,7 +96,7 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
         <div className="px-5 py-4 border-b border-vault-border">
           <div className="grid grid-cols-2 gap-2">
             <div className="bg-vault-card rounded-lg px-3 py-2 text-center border border-vault-border">
-              <div className="text-xl font-bold text-purple-400">{items.length}</div>
+              <div className="text-xl font-bold text-accent">{items.length}</div>
               <div className="text-xs text-vault-subtext">合計</div>
             </div>
             <div className="bg-vault-card rounded-lg px-3 py-2 text-center border border-vault-border">
@@ -113,7 +114,7 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
               onClick={() => handleNavClick(nav.value)}
               className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${
                 isNavActive(nav.value)
-                  ? "bg-purple-600/20 text-purple-300 border border-purple-600/30"
+                  ? "bg-accent/20 text-accent/80 border border-accent/30"
                   : "text-vault-subtext hover:bg-vault-card hover:text-vault-text border border-transparent"
               }`}
             >
@@ -148,7 +149,7 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
                       }
                       className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 ${
                         isActive
-                          ? "bg-purple-600/20 text-purple-300 border border-purple-600/30"
+                          ? "bg-accent/20 text-accent/80 border border-accent/30"
                           : "text-vault-subtext hover:bg-vault-card hover:text-vault-text border border-transparent"
                       }`}
                     >
@@ -156,7 +157,7 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
                         {icon}
                       </span>
                       <span className="truncate flex-1">{cat}</span>
-                      <span className={`text-xs flex-shrink-0 ${isActive ? "text-purple-400" : "text-vault-muted"}`}>
+                      <span className={`text-xs flex-shrink-0 ${isActive ? "text-accent" : "text-vault-muted"}`}>
                         {count}
                       </span>
                     </button>
@@ -168,7 +169,7 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
                         setShareCategory(cat);
                       }}
                       title={`${cat} を共有`}
-                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center opacity-0 group-hover/cat:opacity-100 hover:bg-purple-600/25 text-vault-muted hover:text-purple-400 transition-all duration-150 text-xs"
+                      className="absolute right-1.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center opacity-0 group-hover/cat:opacity-100 hover:bg-accent/25 text-vault-muted hover:text-accent transition-all duration-150 text-xs"
                     >
                       ↗
                     </button>
@@ -191,8 +192,8 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
                     onClick={() => onFilterChange({ tag, category: "", onlyFavorites: false })}
                     className={`text-xs px-2 py-1 rounded-md border transition-all duration-150 ${
                       filter.tag === tag
-                        ? "bg-purple-600/20 text-purple-300 border-purple-600/30"
-                        : "border-vault-border text-vault-subtext hover:border-purple-600/40 hover:text-vault-text"
+                        ? "bg-accent/20 text-accent/80 border-accent/30"
+                        : "border-vault-border text-vault-subtext hover:border-accent/40 hover:text-vault-text"
                     }`}
                   >
                     #{tag}
@@ -203,10 +204,8 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
           )}
         </nav>
 
-        {/* フッター */}
-        <div className="px-5 py-3 border-t border-vault-border">
-          <p className="text-xs text-vault-muted text-center">HTML Vault v1.1</p>
-        </div>
+        {/* フッター: テーマ切り替え */}
+        <ThemeToggle />
       </aside>
 
       {/* 共有モーダル */}

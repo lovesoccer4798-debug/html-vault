@@ -31,9 +31,9 @@ export default function DashboardStats({ items }: DashboardStatsProps) {
       label: "スニペット",
       value: items.length,
       icon: "⊞",
-      color: "text-purple-400",
-      bg: "from-purple-900/20 to-purple-900/5",
-      border: "border-purple-600/20",
+      color: "text-accent",
+      bg: "from-accent/10 to-accent/5",
+      border: "border-accent/20",
       sub: `${urlCount} URL付き`,
     },
     {
