@@ -1,101 +1,228 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect, useMemo } from "react";
+import Sidebar from "@/components/Sidebar";
+import HtmlCard from "@/components/HtmlCard";
+import AddEditModal from "@/components/AddEditModal";
+import PreviewModal from "@/components/PreviewModal";
+import DashboardStats from "@/components/DashboardStats";
+import { HtmlItem, FilterState } from "@/lib/types";
+import { getItems, addItem, updateItem, deleteItem, toggleFavorite, saveItems } from "@/lib/storage";
+import { sampleItems } from "@/lib/sampleData";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="https://nextjs.org/icons/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [items, setItems] = useState<HtmlItem[]>([]);
+  const [filter, setFilter] = useState<FilterState>({
+    search: "",
+    category: "",
+    tag: "",
+    onlyFavorites: false,
+  });
+  const [addEditTarget, setAddEditTarget] = useState<HtmlItem | null | "new">(null);
+  const [previewTarget, setPreviewTarget] = useState<HtmlItem | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="https://nextjs.org/icons/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
+  useEffect(() => {
+    const stored = getItems();
+    if (stored.length === 0) {
+      saveItems(sampleItems);
+      setItems(sampleItems);
+    } else {
+      setItems(stored);
+    }
+  }, []);
+
+  const refresh = () => setItems(getItems());
+
+  const handleFilterChange = (partial: Partial<FilterState>) => {
+    setFilter((prev) => ({ ...prev, ...partial }));
+  };
+
+  const filteredItems = useMemo(() => {
+    return items.filter((item) => {
+      if (filter.onlyFavorites && !item.favorite) return false;
+      if (filter.category && item.category !== filter.category) return false;
+      if (filter.tag && !item.tags.includes(filter.tag)) return false;
+      if (filter.search) {
+        const q = filter.search.toLowerCase();
+        const match =
+          item.title.toLowerCase().includes(q) ||
+          item.description.toLowerCase().includes(q) ||
+          item.category.toLowerCase().includes(q) ||
+          item.tags.some((t) => t.toLowerCase().includes(q));
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [items, filter]);
+
+  const handleSave = (data: Omit<HtmlItem, "id" | "createdAt" | "updatedAt">) => {
+    if (addEditTarget === "new") {
+      addItem(data);
+    } else if (addEditTarget) {
+      updateItem(addEditTarget.id, data);
+    }
+    refresh();
+    setAddEditTarget(null);
+  };
+
+  const handleDelete = (id: string) => {
+    if (deleteConfirm === id) {
+      deleteItem(id);
+      refresh();
+      setDeleteConfirm(null);
+    } else {
+      setDeleteConfirm(id);
+      setTimeout(() => setDeleteConfirm(null), 3000);
+    }
+  };
+
+  const handleToggleFavorite = (id: string) => {
+    toggleFavorite(id);
+    refresh();
+  };
+
+  const handleEditFromPreview = (item: HtmlItem) => {
+    setPreviewTarget(null);
+    setAddEditTarget(item);
+  };
+
+  const filterLabel = filter.onlyFavorites
+    ? "お気に入り"
+    : filter.category
+    ? filter.category
+    : filter.tag
+    ? `#${filter.tag}`
+    : filter.search
+    ? `"${filter.search}"`
+    : "すべて";
+
+  return (
+    <div className="flex min-h-screen bg-vault-bg">
+      <Sidebar items={items} filter={filter} onFilterChange={handleFilterChange} />
+
+      <main className="flex-1 ml-60 min-h-screen">
+        {/* Top bar */}
+        <header className="sticky top-0 z-10 bg-vault-bg/95 backdrop-blur border-b border-vault-border px-6 py-4 flex items-center gap-4">
+          <div className="flex-1">
+            <h1 className="text-sm font-semibold text-vault-text">{filterLabel}</h1>
+            <p className="text-xs text-vault-muted">{filteredItems.length} 件</p>
+          </div>
+
+          {/* Search */}
+          <div className="relative w-72">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-vault-muted text-sm select-none">
+              🔍
+            </span>
+            <input
+              type="text"
+              value={filter.search}
+              onChange={(e) => handleFilterChange({ search: e.target.value })}
+              placeholder="タイトル・タグで検索..."
+              className="w-full bg-vault-card border border-vault-border rounded-lg pl-9 pr-8 py-2 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition-colors"
             />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+            {filter.search && (
+              <button
+                onClick={() => handleFilterChange({ search: "" })}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-vault-muted hover:text-vault-text text-xs"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+
+          {/* Add button */}
+          <button
+            onClick={() => setAddEditTarget("new")}
+            className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-purple-900/30 transition-colors flex-shrink-0"
           >
-            Read our docs
-          </a>
+            <span className="text-lg leading-none">+</span>
+            新規追加
+          </button>
+        </header>
+
+        {/* Content */}
+        <div className="p-6">
+          {!filter.category && !filter.tag && !filter.onlyFavorites && !filter.search && (
+            <DashboardStats items={items} />
+          )}
+
+          {filteredItems.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-24 text-center">
+              <div className="text-5xl mb-4">🗂️</div>
+              <h3 className="text-vault-text font-semibold mb-2">
+                {items.length === 0
+                  ? "まだスニペットがありません"
+                  : "該当するスニペットがありません"}
+              </h3>
+              <p className="text-vault-muted text-sm mb-6">
+                {items.length === 0
+                  ? "「新規追加」ボタンから最初のHTMLスニペットを追加しましょう"
+                  : "検索条件を変えてみてください"}
+              </p>
+              {items.length === 0 && (
+                <button
+                  onClick={() => setAddEditTarget("new")}
+                  className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-medium rounded-lg shadow-lg shadow-purple-900/30 transition-colors"
+                >
+                  最初のスニペットを追加
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filteredItems.map((item) => (
+                <div key={item.id} className="relative">
+                  {deleteConfirm === item.id && (
+                    <div className="absolute inset-0 z-10 bg-red-900/90 rounded-xl flex flex-col items-center justify-center gap-3 p-4">
+                      <p className="text-sm text-red-200 text-center font-medium">
+                        本当に削除しますか？
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="px-3 py-1.5 bg-red-500 hover:bg-red-400 text-white text-xs rounded-lg font-medium"
+                        >
+                          削除する
+                        </button>
+                        <button
+                          onClick={() => setDeleteConfirm(null)}
+                          className="px-3 py-1.5 bg-vault-card hover:bg-vault-border text-vault-text text-xs rounded-lg"
+                        >
+                          キャンセル
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  <HtmlCard
+                    item={item}
+                    onPreview={setPreviewTarget}
+                    onEdit={setAddEditTarget}
+                    onDelete={handleDelete}
+                    onToggleFavorite={handleToggleFavorite}
+                  />
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="https://nextjs.org/icons/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+      {addEditTarget !== null && (
+        <AddEditModal
+          item={addEditTarget === "new" ? null : addEditTarget}
+          onSave={handleSave}
+          onClose={() => setAddEditTarget(null)}
+        />
+      )}
+
+      {previewTarget && (
+        <PreviewModal
+          item={previewTarget}
+          onClose={() => setPreviewTarget(null)}
+          onEdit={handleEditFromPreview}
+        />
+      )}
     </div>
   );
 }
