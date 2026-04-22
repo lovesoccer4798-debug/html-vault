@@ -11,7 +11,7 @@ interface PreviewModalProps {
 
 export default function PreviewModal({ item, onClose, onEdit }: PreviewModalProps) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
+  const [mobileTab, setMobileTab] = useState<"preview" | "code">("preview");
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -22,82 +22,111 @@ export default function PreviewModal({ item, onClose, onEdit }: PreviewModalProp
     return () => window.removeEventListener("keydown", handleKey);
   }, [onClose]);
 
+  // モーダルが開いた時にスクロールをロック
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
   if (!item) return null;
 
   const hasUrl = !!item.url;
   const hasCode = !!item.code;
 
   const copyCode = async () => {
-    const text = item.code || item.url || "";
-    await navigator.clipboard.writeText(text);
+    await navigator.clipboard.writeText(item.code || item.url || "");
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const PreviewFrame = () => (
+    hasUrl ? (
+      <iframe
+        src={item.url}
+        title={`${item.title} プレビュー`}
+        className="w-full h-full border-0 bg-white"
+        sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+      />
+    ) : hasCode ? (
+      <iframe
+        ref={iframeRef}
+        srcDoc={item.code}
+        title={`${item.title} プレビュー`}
+        className="w-full h-full border-0 bg-white"
+        sandbox="allow-scripts allow-same-origin"
+      />
+    ) : (
+      <div className="flex items-center justify-center h-full bg-vault-bg text-vault-muted text-sm">
+        コンテンツがありません
+      </div>
+    )
+  );
+
+  const CodePanel = () => (
+    <div className="flex flex-col h-full bg-vault-bg">
+      <div className="px-4 py-2.5 border-b border-vault-border flex items-center justify-between flex-shrink-0">
+        <p className="text-xs font-semibold text-vault-muted uppercase tracking-wider">HTML コード</p>
+        <span className="text-xs text-vault-muted">{(item.code || "").split("\n").length} 行</span>
+      </div>
+      <pre className="flex-1 overflow-auto p-4 text-xs font-mono leading-relaxed">
+        <code className="text-green-400">{item.code}</code>
+      </pre>
+    </div>
+  );
+
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/75 backdrop-blur-sm"
       onClick={onClose}
     >
+      {/*
+        モバイル: 画面下からシートとして表示（高さ95vh）
+        PC: 中央にモーダル表示
+      */}
       <div
-        className="bg-vault-surface border border-vault-border rounded-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl shadow-black/60"
+        className="
+          bg-vault-surface border-t md:border border-vault-border
+          w-full md:max-w-5xl
+          h-[95svh] md:h-[88vh] md:max-h-[88vh]
+          md:rounded-2xl rounded-t-2xl
+          flex flex-col overflow-hidden
+          shadow-2xl shadow-black/60
+        "
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-vault-border">
-          <div className="flex-1 min-w-0 mr-4">
-            <div className="flex items-center gap-2 mb-1">
-              <h2 className="font-semibold text-vault-text text-lg truncate">{item.title}</h2>
-              {item.favorite && <span className="text-amber-400 text-sm">♥</span>}
+        {/* ヘッダー */}
+        <div className="flex items-center justify-between px-4 md:px-6 py-3 md:py-4 border-b border-vault-border flex-shrink-0">
+          <div className="flex-1 min-w-0 mr-3">
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-vault-text text-base truncate">{item.title}</h2>
+              {item.favorite && <span className="text-amber-400 text-sm flex-shrink-0">♥</span>}
             </div>
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
               {item.category && (
                 <span className="text-xs px-2 py-0.5 rounded-md bg-purple-600/15 text-purple-400 border border-purple-600/20">
                   {item.category}
                 </span>
               )}
-              {item.tags.map((tag) => (
-                <span key={tag} className="text-xs text-vault-muted">
-                  #{tag}
-                </span>
-              ))}
               {hasUrl && (
                 <a
                   href={item.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-xs px-2 py-0.5 rounded-md bg-blue-600/15 text-blue-400 border border-blue-600/20 hover:bg-blue-600/25 transition-colors flex items-center gap-1"
+                  className="text-xs text-blue-400 flex items-center gap-0.5 hover:underline"
                 >
-                  ↗ 外部リンクを開く
+                  ↗ 外部リンク
                 </a>
               )}
             </div>
           </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            {/* View mode toggle (only when both exist) */}
-            {hasUrl && hasCode && (
-              <div className="flex bg-vault-card rounded-lg border border-vault-border p-0.5">
-                {(["preview", "code"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    onClick={() => setViewMode(mode)}
-                    className={`text-xs px-2.5 py-1 rounded-md transition-colors ${
-                      viewMode === mode
-                        ? "bg-purple-600/30 text-purple-300"
-                        : "text-vault-muted hover:text-vault-text"
-                    }`}
-                  >
-                    {mode === "preview" ? "プレビュー" : "コード"}
-                  </button>
-                ))}
-              </div>
-            )}
+
+          <div className="flex items-center gap-1.5 flex-shrink-0">
             {hasCode && (
               <button
                 onClick={copyCode}
-                className="text-xs px-3 py-1.5 rounded-lg bg-vault-card hover:bg-vault-border text-vault-subtext hover:text-vault-text border border-vault-border transition-colors"
+                className="hidden sm:block text-xs px-3 py-1.5 rounded-lg bg-vault-card hover:bg-vault-border text-vault-subtext hover:text-vault-text border border-vault-border transition-colors"
               >
-                {copied ? "✓ コピー完了" : "コードをコピー"}
+                {copied ? "✓ コピー" : "コピー"}
               </button>
             )}
             <button
@@ -108,54 +137,79 @@ export default function PreviewModal({ item, onClose, onEdit }: PreviewModalProp
             </button>
             <button
               onClick={onClose}
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-vault-card text-vault-muted hover:text-vault-text transition-colors text-lg"
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-vault-card text-vault-muted hover:text-vault-text transition-colors"
             >
               ✕
             </button>
           </div>
         </div>
 
-        {/* Body: preview + optional code panel */}
-        <div className="flex flex-1 min-h-0">
-          {/* Live Preview */}
-          <div className="flex-1 min-w-0">
-            {hasUrl && (!hasCode || viewMode === "preview") ? (
-              <iframe
-                ref={iframeRef}
-                src={item.url}
-                title={`${item.title} プレビュー`}
-                className="w-full h-full border-0 bg-white"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
-              />
-            ) : hasCode ? (
-              <iframe
-                ref={iframeRef}
-                srcDoc={item.code}
-                title={`${item.title} プレビュー`}
-                className="w-full h-full border-0 bg-white"
-                sandbox="allow-scripts allow-same-origin"
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full bg-vault-bg text-vault-muted text-sm">
-                コンテンツがありません
-              </div>
+        {/* ===== モバイル: タブ切替 ===== */}
+        <div className="md:hidden flex-shrink-0">
+          <div className="flex border-b border-vault-border">
+            <button
+              onClick={() => setMobileTab("preview")}
+              className={`flex-1 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                mobileTab === "preview"
+                  ? "border-purple-500 text-purple-400"
+                  : "border-transparent text-vault-muted"
+              }`}
+            >
+              プレビュー
+            </button>
+            {hasCode && (
+              <button
+                onClick={() => setMobileTab("code")}
+                className={`flex-1 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                  mobileTab === "code"
+                    ? "border-purple-500 text-purple-400"
+                    : "border-transparent text-vault-muted"
+                }`}
+              >
+                コード
+              </button>
             )}
           </div>
+        </div>
 
-          {/* Code panel (shown when code exists AND not in URL-only view) */}
-          {hasCode && (!hasUrl || viewMode === "code") && (
-            <div className="w-80 flex-shrink-0 flex flex-col border-l border-vault-border bg-vault-bg">
-              <div className="px-4 py-3 border-b border-vault-border flex items-center justify-between">
-                <p className="text-xs font-semibold text-vault-muted uppercase tracking-wider">
-                  HTML コード
-                </p>
-                <span className="text-xs text-vault-muted">
-                  {item.code.split("\n").length} 行
-                </span>
+        {/* モバイル: タブコンテンツ */}
+        <div className="md:hidden flex-1 min-h-0">
+          {mobileTab === "preview" ? (
+            <div className="h-full">
+              <PreviewFrame />
+            </div>
+          ) : (
+            <div className="h-full overflow-auto">
+              <div className="h-full">
+                <CodePanel />
               </div>
-              <pre className="flex-1 overflow-auto p-4 text-xs font-mono leading-relaxed">
-                <code className="text-green-400">{item.code}</code>
-              </pre>
+            </div>
+          )}
+        </div>
+
+        {/* モバイル: コピーボタン（コードタブ表示時） */}
+        {mobileTab === "code" && hasCode && (
+          <div className="md:hidden px-4 py-3 border-t border-vault-border flex-shrink-0">
+            <button
+              onClick={copyCode}
+              className="w-full py-2.5 rounded-xl bg-purple-600/20 text-purple-300 border border-purple-600/30 text-sm font-medium transition-colors"
+            >
+              {copied ? "✓ コピー完了" : "コードをコピー"}
+            </button>
+          </div>
+        )}
+
+        {/* ===== PC: 横並びスプリットビュー ===== */}
+        <div className="hidden md:flex flex-1 min-h-0">
+          {/* プレビュー */}
+          <div className="flex-1 min-w-0">
+            <PreviewFrame />
+          </div>
+
+          {/* コードパネル（コードがある時のみ） */}
+          {hasCode && (
+            <div className="w-80 flex-shrink-0 border-l border-vault-border">
+              <CodePanel />
             </div>
           )}
         </div>

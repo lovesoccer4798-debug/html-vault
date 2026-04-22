@@ -55,19 +55,19 @@ export default function AddEditModal({ item, onSave, onClose }: AddEditModalProp
   const previewSrc = url.trim() || null;
 
   const inputClass =
-    "w-full bg-vault-bg border border-vault-border rounded-lg px-3 py-2 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition-colors";
+    "w-full bg-vault-bg border border-vault-border rounded-xl px-3 py-2.5 text-sm text-vault-text placeholder-vault-muted focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500/30 transition-colors";
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="bg-vault-surface border border-vault-border rounded-2xl w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl shadow-black/50"
+        className="bg-vault-surface border-t md:border border-vault-border rounded-t-2xl md:rounded-2xl w-full md:max-w-3xl h-[92svh] md:max-h-[90vh] flex flex-col overflow-hidden shadow-2xl shadow-black/50"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-vault-border">
+        <div className="flex items-center justify-between px-4 md:px-6 py-4 border-b border-vault-border flex-shrink-0">
           <h2 className="font-semibold text-vault-text text-lg">
             {isEditing ? "スニペットを編集" : "新しいスニペットを追加"}
           </h2>
@@ -98,7 +98,7 @@ export default function AddEditModal({ item, onSave, onClose }: AddEditModalProp
 
         <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0">
           <div className={`flex-1 overflow-y-auto ${activeTab === "preview" ? "hidden" : ""}`}>
-            <div className="p-6 space-y-4">
+            <div className="p-4 md:p-6 space-y-4">
               {/* Title */}
               <div>
                 <label className="block text-xs font-medium text-vault-subtext mb-1.5">
@@ -237,7 +237,7 @@ export default function AddEditModal({ item, onSave, onClose }: AddEditModalProp
           )}
 
           {/* Footer */}
-          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-vault-border">
+          <div className="flex items-center justify-end gap-3 px-4 md:px-6 py-4 border-t border-vault-border pb-safe [padding-bottom:max(1rem,env(safe-area-inset-bottom,0px))]">
             <button
               type="button"
               onClick={onClose}

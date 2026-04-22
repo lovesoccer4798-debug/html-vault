@@ -69,8 +69,8 @@ export default function Sidebar({ items, filter, onFilterChange, isOpen, onClose
           md:translate-x-0 md:shadow-none
         `}
       >
-        {/* ロゴ + 閉じるボタン */}
-        <div className="px-5 py-5 border-b border-vault-border flex items-center justify-between">
+        {/* ロゴ + 閉じるボタン（safe area対応） */}
+        <div className="px-5 py-5 border-b border-vault-border flex items-center justify-between pt-safe [padding-top:max(1.25rem,env(safe-area-inset-top,0px))]">
           <div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-lg shadow-purple-900/40">
